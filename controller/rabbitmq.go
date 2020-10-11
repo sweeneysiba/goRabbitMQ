@@ -166,8 +166,8 @@ func QueueConsumer() {
 			fmt.Println("============= NEW  Request ===========")
 			logrus.WithFields(requestMap).Info("RabbitMQ Queue QueueConsumer with request")
 			// PrettyPrint(request)
+			d.Ack(true)
 			for _, reqqq := range request.Offers {
-
 				err = models.StoreHotel(reqqq.Hotel)
 				if err != nil {
 					panic(err)

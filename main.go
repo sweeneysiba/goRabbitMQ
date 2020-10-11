@@ -31,5 +31,5 @@ func main() {
 	go controller.QueueConsumer()
 	r := Routes.SetupRouter()
 	//running
-	r.Run()
+	r.Run(":8080")
 }
