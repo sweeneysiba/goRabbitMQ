@@ -3,6 +3,8 @@ package models
 import (
 	"goRabbitMQ/config"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 //RatePlan ...
@@ -71,6 +73,14 @@ func StoreRatePlan(input RatePlanInput) error {
 		OtherConditions:    otherConditionsStr,
 		MealPlan:           input.MealPlan,
 	}
+	logrus.WithFields(logrus.Fields{
+		"HotelID":            input.HotelID,
+		"RatePlanID":         input.RatePlanID,
+		"CancellationPolicy": cancellationPolicyStr,
+		"Name":               input.Name,
+		"OtherConditions":    otherConditionsStr,
+		"MealPlan":           input.MealPlan,
+	}).Info("inserting a row in mysql table - rate_plans")
 	if err := config.DB.Create(data).Error; err != nil {
 		return err
 	}

@@ -3,6 +3,8 @@ package models
 import (
 	"goRabbitMQ/config"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -49,6 +51,13 @@ func StoreRoom(input RoomInput) error {
 		Name:        input.Name,
 		Capacity:    capacityStr,
 	}
+	logrus.WithFields(logrus.Fields{
+		"HotelID":     input.HotelID,
+		"RoomID":      input.RoomID,
+		"Description": input.Description,
+		"Name":        input.Name,
+		"Capacity":    capacityStr,
+	}).Info("inserting a row in mysql table - rooms")
 	if err := config.DB.Create(data).Error; err != nil {
 		return err
 	}

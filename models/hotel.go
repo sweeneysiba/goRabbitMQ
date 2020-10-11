@@ -1,6 +1,10 @@
 package models
 
-import "goRabbitMQ/config"
+import (
+	"goRabbitMQ/config"
+
+	"github.com/sirupsen/logrus"
+)
 
 /*
 	create table query ...
@@ -56,7 +60,6 @@ type Hotel struct {
 
 //StoreHotel ...
 func StoreHotel(input HotelInput) error {
-
 	AmenitiesString := ""
 	for index, val := range input.Amenities {
 		if index > 0 {
@@ -77,6 +80,19 @@ func StoreHotel(input HotelInput) error {
 		RoomCount:   input.RoomCount,
 		Currency:    input.Currency,
 	}
+	logrus.WithFields(logrus.Fields{
+		"HotelID":     input.HotelID,
+		"Name":        input.Name,
+		"Country":     input.Country,
+		"Address":     input.Address,
+		"Latitude":    input.Latitude,
+		"Longitude":   input.Longitude,
+		"Telephone":   input.Telephone,
+		"Amenities":   AmenitiesString,
+		"Description": input.Description,
+		"RoomCount":   input.RoomCount,
+		"Currency":    input.Currency,
+	}).Info("inserting a row in mysql table - hotels")
 	if err := config.DB.Create(data).Error; err != nil {
 		return err
 	}

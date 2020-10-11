@@ -13,6 +13,7 @@ func SetupRouter() *gin.Engine {
 	{
 		grp1.POST("Publisher", func(c *gin.Context) {
 			controller.PublishOffers(c)
+			// controller.PublishOffers(c.Writer, c.Request)
 		}) //declare queue
 	}
 	return r

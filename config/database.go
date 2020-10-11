@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 )
 
 //DB ...
@@ -29,6 +30,13 @@ func BuildDBConfig() *DBConfig {
 		Password: "root",
 		DBName:   "eastern_enterprise",
 	}
+	logrus.WithFields(logrus.Fields{
+		"Host":     "localhost",
+		"Port":     3306,
+		"User":     "root",
+		"Password": "root",
+		"DBName":   "eastern_enterprise",
+	}).Info("DB Configuration Called and returned")
 	return &dbConfig
 }
 

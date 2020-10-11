@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
@@ -17,20 +18,20 @@ var (
 	amqpURL = flag.String("amqp", "amqp://guest:guest@127.0.0.1:5672/", "amqp uri")
 )
 
-func init() {
-	flag.Parse()
-}
-
 //PublishOffers ...
 func PublishOffers(c *gin.Context) {
 	w, r := c.Writer, c.Request
-	fmt.Println("clling queueCAMSMails")
+
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "unable to connect to rabbitmq server"})
 		return
 	}
+	logrus.WithFields(logrus.Fields{
+		"amqp": "amqp://guest:guest@127.0.0.1:5672/",
+	}).Info("RabbitMQ connect")
+
 	defer conn.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -38,11 +39,16 @@ func PublishOffers(c *gin.Context) {
 		return
 	}
 	var inputCheck models.OffersInput
+	var inputCheckmapForLogs map[string]interface{}
+
 	err = json.Unmarshal(body, &inputCheck)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Bad Request | please check the request body"})
 		return
 	}
+
+	logrus.WithFields(inputCheckmapForLogs).Info("RabbitMQ will publish data to queue")
+
 	ch, err := conn.Channel()
 	fmt.Println("ch---------------------", ch)
 	fmt.Println("err---------------------", err)
@@ -66,6 +72,16 @@ func PublishOffers(c *gin.Context) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	logrus.WithFields(logrus.Fields{
+		"Queue":      queueName,
+		"Passive":    false,
+		"Durable":    false,
+		"AutoDelete": false,
+		"Exclusive":  false,
+		"NoWait":     false,
+		"Arguments":  nil,
+	}).Info("RabbitMQ Queue delcared with arguments")
+
 	// fmt.Println("Queuing Mail Scan : ", string(body))
 	err = ch.Publish(
 		"",     // exchange
@@ -80,6 +96,15 @@ func PublishOffers(c *gin.Context) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	logrus.WithFields(logrus.Fields{
+		"exchange":    "",
+		"routing key": q.Name,
+		"mandatory":   false,
+		"immediate":   false,
+		"ContentType": "application/json",
+		"Body":        []byte(body),
+	}).Info("RabbitMQ Queue Published")
+
 	c.JSON(http.StatusOK, gin.H{"message": "published the message through rabbitmq"})
 	return
 }
@@ -136,14 +161,25 @@ func QueueConsumer() {
 		for d := range msgs {
 			var request models.OffersInput
 			json.Unmarshal([]byte(d.Body), &request)
+			var requestMap map[string]interface{}
+			json.Unmarshal([]byte(d.Body), &requestMap)
 			fmt.Println("============= NEW  Request ===========")
-			fmt.Println("%+v\n", request)
+			logrus.WithFields(requestMap).Info("RabbitMQ Queue QueueConsumer with request")
 			// PrettyPrint(request)
 			for _, reqqq := range request.Offers {
 
 				err = models.StoreHotel(reqqq.Hotel)
+				if err != nil {
+					panic(err)
+				}
 				err = models.StoreRoom(reqqq.Room)
+				if err != nil {
+					panic(err)
+				}
 				err = models.StoreRatePlan(reqqq.RatePlan)
+				if err != nil {
+					panic(err)
+				}
 			}
 
 			d.Ack(true)
